@@ -1,189 +1,576 @@
-# TeleBridge: Le Framework de Bot Telegram pour Laravel
+# TeleBridge: Le Connecteur Telegram pour Laravel
 
-TeleBridge est un package Laravel conçu pour créer, gérer et étendre des bots Telegram de manière simple et structurée. Il fournit une base solide pour le traitement des messages, la détection d'intentions et l'intégration avec d'autres services.
+TeleBridge est un **package Laravel léger** conçu pour connecter votre application Laravel avec l'API Telegram Bot. Il agit comme un **connecteur pur**, gérant uniquement la communication avec Telegram et laissant toute la logique métier (IA, base de connaissances, etc.) à votre application Laravel.
 
-## ✨ Fonctionnalités
+## ✨ Philosophie
 
--   **Prêt à l'emploi** : Installez, configurez, et votre bot est prêt à répondre.
--   **Multi-Bot** : Conçu pour gérer plusieurs bots au sein de la même application.
--   **Logique Intelligente** : Système de détection d'intention et de moteur de réponse intégré.
--   **Extensible** : Des services modulaires et un gestionnaire d'intégrations pour connecter des IA, des CRM, etc.
--   **Support Média Étendu** : Envoi de photos, documents, vidéos.
--   **Claviers Interactifs** : Création et gestion de claviers inline et de réponse.
--   **Gestion des Callback Queries** : Traitement des interactions utilisateur via les boutons inline.
--   **Basé sur Laravel** : S'intègre parfaitement à l'écosystème Laravel (migrations, commandes, configuration).
+**TeleBridge = Connecteur Uniquement**
 
----
+✅ **Son rôle :**
+- Recevoir les webhooks Telegram
+- Router les messages vers votre backend Laravel
+- Envoyer les réponses formatées à Telegram
+- Gérer les claviers interactifs Telegram
+- Supporter tous les types de messages (texte, photo, document, vidéo, audio, etc.)
 
-## 🚀 Guide de Démarrage Rapide
+❌ **Pas son rôle :**
+- Intelligence artificielle (IA)
+- Détection d'intention
+- Génération de réponses
+- Gestion des licences
+- Base de connaissances
+- Logique métier
 
-Suivez ces étapes pour rendre votre bot opérationnel en quelques minutes.
-
-### Étape 1 : Installation
-
-1.  Ouvrez votre terminal dans un projet Laravel existant et installez le package via Composer :
-    ```bash
-    composer require mbindi/telebridge
-    ```
-
-2.  Exécutez la commande d'installation pour publier le fichier de configuration et lancer les migrations de la base de données :
-    ```bash
-    php artisan telebridge:install
-    ```
-    Cela créera les tables `telegram_bots`, `telegram_users`, et `telegram_messages` dans votre base de données.
-
-### Étape 2 : Configuration
-
-1.  **Obtenez un token de bot** : Parlez à [@BotFather](https://t.me/BotFather) sur Telegram pour créer un nouveau bot. Il vous donnera un **token** (jeton d'accès).
-
-2.  **Ajoutez le token à votre environnement** : Ouvrez votre fichier `.env` et ajoutez-y le token :
-    ```env
-    TELEGRAM_BOT_TOKEN="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11"
-    TELEGRAM_WEBHOOK_SECRET="votre_mot_de_passe_secret_pour_securiser_le_webhook"
-    ```
-    Le `TELEGRAM_WEBHOOK_SECRET` est une chaîne de caractères aléatoire que vous inventez. Elle sera utilisée pour vérifier que les requêtes proviennent bien de Telegram.
-
-### Étape 3 : Exposer votre site et définir le Webhook
-
-Pour que Telegram puisse envoyer des messages à votre application, celle-ci doit être accessible publiquement sur internet.
-
-1.  **Pour le développement local** : Utilisez un outil comme [Ngrok](https://ngrok.com/) pour créer un tunnel sécurisé vers votre machine locale.
-    ```bash
-    # Expose le port 8000 de votre serveur local
-    ngrok http 8000
-    ```
-    Ngrok vous donnera une URL publique en `https` (ex: `https://abcdef123456.ngrok.io`).
-
-2.  **Définissez le Webhook** : Exécutez la commande Artisan suivante. Elle configurera automatiquement Telegram pour qu'il envoie les mises à jour à votre application.
-    ```bash
-    php artisan telebridge:set-webhook
-    ```
-    Le package utilisera l'URL de votre application (définie dans `APP_URL` de votre `.env`) pour construire l'URL du webhook. Assurez-vous que `APP_URL` correspond à votre URL publique (ex: votre URL Ngrok).
-
-### Étape 4 : Testez votre Bot !
-
-Envoyez un message à votre bot sur Telegram. Essayez "hello", "/start", "quel est le prix ?" ou "comment vous contacter ?". Le bot devrait vous répondre !
+> **Principe :** Votre application Laravel contient toute l'intelligence. TeleBridge est juste le pont entre Telegram et votre app.
 
 ---
 
-## 🧠 Concepts Clés et Personnalisation
+## 🚀 Installation
 
-### Le Flux d'un Message
+### Étape 1 : Installer via Composer
 
-1.  **Webhook** -> `TeleBridgeController` : Le message arrive.
-2.  **Controller** -> `MessageRouter` : Le message est transmis au routeur logique.
-3.  **Router** -> `IntentDetector` : L'intention est extraite du message.
-4.  **Router** -> `ResponseEngine` : Une réponse est générée en fonction de l'intention.
-5.  **Router** -> `TelegramClient` : La réponse est envoyée à l'utilisateur.
+```bash
+composer require mbindi/telebridge
+```
 
-### Personnaliser les Réponses et les Intentions
+### Étape 2 : Publier les migrations
 
-Pour débuter, vous pouvez modifier directement les services pour ajouter votre propre logique.
+```bash
+php artisan vendor:publish --tag=telebridge-migrations
+php artisan migrate
+```
 
--   **Ajouter une intention** : Ouvrez `src/Services/IntentDetector.php` et ajoutez une nouvelle condition.
-    ```php
-    // Dans la méthode detect()
-    if (str_contains($text, 'aide')) {
-        return ['intent' => 'ask_help', 'confidence' => 0.9];
-    }
-    ```
+### Étape 3 : Publier la configuration (optionnel)
 
--   **Ajouter une réponse** : Ouvrez `src/Services/ResponseEngine.php` et ajoutez la réponse correspondante. Vous pouvez maintenant inclure des claviers interactifs !
-    ```php
-    // Dans la méthode generate()
-    use Mbindi\Telebridge\Services\KeyboardBuilder;
+```bash
+php artisan vendor:publish --tag=telebridge-config
+```
 
-    // ...
+### Étape 4 : Configuration
 
-    case 'ask_price':
-        $response['text'] = 'Nos prix débutent à 100 USD. Voir nos plans ?';
-        $response['reply_markup'] = KeyboardBuilder::inline()
-            ->row([
-                KeyboardBuilder::inline()->button('Voir les Plans', ['callback_data' => 'view_plans']),
-                KeyboardBuilder::inline()->button('Contacter Ventes', ['callback_data' => 'contact_sales']),
-            ])
-            ->build();
-        break;
-    // ...
-    ```
+Ajoutez vos tokens Telegram dans `.env` :
 
-### Gestion des Callback Queries
+```env
+TELEGRAM_BOT_TOKEN=123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
+TELEGRAM_WEBHOOK_SECRET=votre_secret_pour_webhook
+```
 
-Lorsque l'utilisateur clique sur un bouton inline, une `callback_query` est envoyée à votre webhook. Le `MessageRouter` est maintenant configuré pour les intercepter et les passer à la méthode `handleCallbackQuery`.
+---
 
-Vous pouvez personnaliser cette méthode dans `src/Services/MessageRouter.php` pour déclencher des actions spécifiques en fonction du `callback_data` reçu.
+## 📊 Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                   TELEGRAM BOT API                       │
+└──────────────────────┬──────────────────────────────────┘
+                       │ Webhook
+                       ↓
+┌─────────────────────────────────────────────────────────┐
+│              TELEBRIDGE (Connecteur)                     │
+│  - TeleBridgeController (webhook)                       │
+│  - MessageRouter (dispatch)                             │
+│  - TelegramClient (API Telegram)                        │
+└──────────────────────┬──────────────────────────────────┘
+                       │ Dispatch Job
+                       ↓
+┌─────────────────────────────────────────────────────────┐
+│            VOTRE APPLICATION LARAVEL                     │
+│  - Votre logique métier                                 │
+│  - Votre IA / Intelligence                              │
+│  - Votre base de données                                │
+│  - Vos services                                         │
+└──────────────────────┬──────────────────────────────────┘
+                       │ Retour réponse
+                       ↓
+┌─────────────────────────────────────────────────────────┐
+│              TELEBRIDGE (Connecteur)                     │
+│  - TelegramClient envoie à Telegram                     │
+└──────────────────────┬──────────────────────────────────┘
+                       │
+                       ↓
+┌─────────────────────────────────────────────────────────┐
+│                UTILISATEUR TELEGRAM                      │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🎯 Guide de Démarrage Rapide
+
+### 1. Créer un bot Telegram
+
+Parlez à [@BotFather](https://t.me/BotFather) sur Telegram pour créer un bot et obtenir un token.
+
+### 2. Créer un bot dans votre application
 
 ```php
-// Dans src/Services/MessageRouter.php, méthode handleCallbackQuery
-protected function handleCallbackQuery(TelegramBot $bot, array $callbackQueryData): void
+use Mbindi\Telebridge\Models\TelegramBot;
+
+$bot = TelegramBot::create([
+    'user_id' => auth()->id(),
+    'token' => env('TELEGRAM_BOT_TOKEN'),
+    'name' => 'Mon Bot Assistant',
+    'is_active' => true,
+]);
+```
+
+### 3. Configurer le webhook
+
+```bash
+php artisan telebridge:set-webhook
+```
+
+Ou manuellement :
+
+```php
+use Mbindi\Telebridge\Services\TelegramClient;
+
+$client = new TelegramClient();
+$client->setWebhook(
+    token: env('TELEGRAM_BOT_TOKEN'),
+    url: route('telebridge.webhook', ['bot_token' => env('TELEGRAM_BOT_TOKEN')])
+);
+```
+
+### 4. Créer un Job pour traiter les messages
+
+**C'est ici que VOUS mettez votre logique !**
+
+```php
+<?php
+
+namespace App\Jobs;
+
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Mbindi\Telebridge\Models\TelegramBot;
+use Mbindi\Telebridge\Models\TelegramMessage;
+use Mbindi\Telebridge\Services\TelegramClient;
+
+class ProcessTelegramMessage implements ShouldQueue
 {
-    $callbackQueryId = $callbackQueryData['id'];
-    $callbackData = $callbackQueryData['data'] ?? '';
-    $chatId = $callbackQueryData['message']['chat']['id'] ?? null;
+    use Dispatchable, Queueable;
 
-    // Répondre immédiatement à la callback query pour supprimer le statut de chargement sur le bouton
-    $this->telegramClient->answerCallbackQuery($bot->token, $callbackQueryId, ['text' => 'Requête traitée !']);
+    public function __construct(
+        public TelegramBot $bot,
+        public TelegramMessage $message,
+        public int $chatId
+    ) {}
 
-    switch ($callbackData) {
-        case 'view_plans':
-            $responseText = "Voici nos différents plans : Basic, Pro, Enterprise.";
-            break;
-        case 'contact_sales':
-            $responseText = "Notre équipe commerciale vous contactera bientôt.";
-            break;
-        default:
-            $responseText = "Action inconnue.";
-            break;
+    public function handle(TelegramClient $telegramClient)
+    {
+        // 1. Récupérer le contenu du message
+        $userMessage = $this->message->content;
+
+        // 2. 🔥 VOTRE LOGIQUE ICI (IA, base de connaissances, etc.)
+        $response = $this->generateResponse($userMessage);
+
+        // 3. Envoyer la réponse via TeleBridge
+        $telegramClient->sendMessage(
+            token: $this->bot->token,
+            chatId: $this->chatId,
+            text: $response,
+            options: ['parse_mode' => 'Markdown']
+        );
+
+        // 4. Sauvegarder la réponse
+        $this->message->markAsProcessed($response);
     }
 
-    if ($chatId && $responseText) {
-        $this->telegramClient->sendMessage($bot->token, $chatId, $responseText);
+    protected function generateResponse(string $message): string
+    {
+        // 🔥 VOTRE INTELLIGENCE ICI
+        // Exemples :
+        // - Appeler votre service IA
+        // - Consulter votre base de connaissances
+        // - Utiliser GPT/Claude/DeepSeek
+        // - Logique métier personnalisée
+        
+        return "Réponse générée par votre logique !";
     }
-
-    // ... (logique d'enregistrement en base de données)
 }
 ```
 
-### Envoyer des Fichiers Média
+### 5. C'est tout ! 🎉
 
-Vous pouvez maintenant envoyer des photos, documents et vidéos en utilisant la façade `TeleBridge`.
+TeleBridge gère automatiquement :
+- ✅ Réception des webhooks
+- ✅ Dispatch du job `ProcessTelegramMessage`
+- ✅ Enregistrement des messages en base
+- ✅ Gestion des utilisateurs Telegram
 
-```php
-use Mbindi\Telebridge\Facades\TeleBridge;
+---
 
-$botToken = config('telebridge.bot.token');
-$chatId = 123456789; // L'ID de l'utilisateur Telegram
+## 📚 Utilisation Avancée
 
-// Envoyer une photo par URL
-TeleBridge::sendPhoto($botToken, $chatId, 'https://example.com/image.jpg', ['caption' => 'Ma belle image']);
-
-// Envoyer un document par file_id (après l'avoir uploadé une première fois)
-TeleBridge::sendDocument($botToken, $chatId, 'BQACAgQAAx...file_id...', ['caption' => 'Mon document']);
-
-// Envoyer une vidéo
-TeleBridge::sendVideo($botToken, $chatId, 'https://example.com/video.mp4');
-```
-
-### Envoyer un Message Manuellement
+### Envoyer des messages avec claviers interactifs
 
 ```php
-use Mbindi\Telebridge\Facades\TeleBridge;
+use Mbindi\Telebridge\Services\TelegramClient;
+use Mbindi\Telebridge\Services\KeyboardBuilder;
 
-$botToken = config('telebridge.bot.token');
-$chatId = 123456789; // L'ID de l'utilisateur Telegram
+$keyboard = KeyboardBuilder::inline()
+    ->row([
+        KeyboardBuilder::inline()->button('Option 1', ['callback_data' => 'option_1']),
+        KeyboardBuilder::inline()->button('Option 2', ['callback_data' => 'option_2']),
+    ])
+    ->row([
+        KeyboardBuilder::inline()->button('Aide', ['callback_data' => 'help']),
+    ])
+    ->build();
 
-TeleBridge::sendMessage($botToken, $chatId, 'Ceci est une notification de votre application !');
+$client = new TelegramClient();
+$client->sendMessage(
+    token: $bot->token,
+    chatId: $chatId,
+    text: 'Choisissez une option :',
+    options: ['reply_markup' => $keyboard]
+);
 ```
+
+### Gérer les clics sur boutons (callback queries)
+
+Les callbacks sont automatiquement gérés par TeleBridge et dispatchés comme messages de type `callback_query`. Gérez-les dans votre job :
+
+```php
+public function handle(TelegramClient $telegramClient)
+{
+    if ($this->message->isCallback()) {
+        $action = $this->message->content; // 'option_1', 'option_2', etc.
+        
+        $response = match($action) {
+            'option_1' => 'Vous avez choisi l\'option 1',
+            'option_2' => 'Vous avez choisi l\'option 2',
+            'help' => 'Voici l\'aide...',
+            default => 'Action inconnue',
+        };
+        
+        $telegramClient->sendMessage(
+            token: $this->bot->token,
+            chatId: $this->chatId,
+            text: $response
+        );
+    }
+}
+```
+
+### Envoyer différents types de médias
+
+```php
+// Photo
+$client->sendPhoto(
+    token: $bot->token,
+    chatId: $chatId,
+    photo: 'https://example.com/image.jpg',
+    options: ['caption' => 'Ma photo']
+);
+
+// Document
+$client->sendDocument(
+    token: $bot->token,
+    chatId: $chatId,
+    document: 'file_id_or_url',
+    options: ['caption' => 'Mon document']
+);
+
+// Vidéo
+$client->sendVideo(
+    token: $bot->token,
+    chatId: $chatId,
+    video: 'file_id_or_url'
+);
+
+// Localisation
+$client->sendLocation(
+    token: $bot->token,
+    chatId: $chatId,
+    latitude: 48.8566,
+    longitude: 2.3522
+);
+
+// Contact
+$client->sendContact(
+    token: $bot->token,
+    chatId: $chatId,
+    phoneNumber: '+33123456789',
+    firstName: 'John Doe'
+);
+```
+
+### Afficher l'indicateur "en train d'écrire..."
+
+```php
+$client->sendChatAction(
+    token: $bot->token,
+    chatId: $chatId,
+    action: 'typing' // ou 'upload_photo', 'record_video', etc.
+);
+```
+
+### Éditer un message existant
+
+```php
+$client->editMessageText(
+    token: $bot->token,
+    chatId: $chatId,
+    messageId: 123,
+    text: 'Message mis à jour !'
+);
+```
+
+---
+
+## 🔧 Modèles Disponibles
+
+### TelegramBot
+
+```php
+use Mbindi\Telebridge\Models\TelegramBot;
+
+// Créer un bot
+$bot = TelegramBot::create([
+    'user_id' => $userId,
+    'license_id' => $licenseId, // Optionnel
+    'token' => 'your-bot-token',
+    'name' => 'Mon Bot',
+    'is_active' => true,
+]);
+
+// Relations
+$bot->user;          // Propriétaire du bot
+$bot->license;       // Licence associée (si applicable)
+$bot->messages;      // Messages du bot
+
+// Helpers
+$bot->hasActiveLicense();
+$bot->getRemainingMessages();
+$bot->getWebhookUrl();
+$bot->activate();
+$bot->deactivate();
+```
+
+### TelegramMessage
+
+```php
+use Mbindi\Telebridge\Models\TelegramMessage;
+
+// Les messages sont créés automatiquement par TeleBridge
+$message = TelegramMessage::find($id);
+
+// Relations
+$message->bot;           // Bot qui a reçu le message
+$message->telegramUser;  // Utilisateur Telegram
+$message->conversation;  // Conversation (si vous avez ce modèle)
+
+// Vérifications de type
+$message->isText();
+$message->isPhoto();
+$message->isDocument();
+$message->isCallback();
+
+// Helpers
+$message->isProcessed();
+$message->getDecodedContent();
+$message->markAsProcessed($response, $metadata);
+
+// Scopes
+TelegramMessage::unprocessed()->get();
+TelegramMessage::ofType('photo')->get();
+```
+
+### TelegramUser
+
+```php
+use Mbindi\Telebridge\Models\TelegramUser;
+
+$user = TelegramUser::where('telegram_id', $telegramId)->first();
+
+$user->telegram_id;  // ID Telegram
+$user->username;     // @username
+$user->first_name;
+$user->last_name;
+$user->last_seen;    // Dernière activité
+```
+
+---
+
+## 🎨 Service Provider
+
+TeleBridge s'enregistre automatiquement via le Service Provider Laravel.
+
+### Routes
+
+Le package enregistre automatiquement la route webhook :
+
+```
+POST /telebridge/webhook/{bot_token}
+```
+
+Cette route est gérée par `TeleBridgeController`.
+
+---
+
+## 🔐 Sécurité
+
+### Validation du webhook
+
+TeleBridge valide automatiquement les webhooks Telegram via le middleware `VerifyTelegramSignature` (si configuré avec `TELEGRAM_WEBHOOK_SECRET`).
+
+### Recommandations
+
+1. **Utilisez HTTPS** : Telegram requiert HTTPS pour les webhooks
+2. **Protégez votre token** : Ne le commitez jamais dans Git
+3. **Utilisez des Jobs asynchrones** : Traitez les messages en queue pour éviter les timeouts
+4. **Validez les entrées** : Validez toujours les données utilisateur dans votre logique
+
+---
+
+## 📖 Exemples d'Intégration
+
+### Avec une IA (OpenAI, Claude, DeepSeek, etc.)
+
+```php
+protected function generateResponse(string $message): string
+{
+    $response = Http::post('https://api.openai.com/v1/chat/completions', [
+        'model' => 'gpt-4',
+        'messages' => [
+            ['role' => 'user', 'content' => $message]
+        ],
+    ]);
+
+    return $response->json()['choices'][0]['message']['content'];
+}
+```
+
+### Avec une base de connaissances
+
+```php
+protected function generateResponse(string $message): string
+{
+    // Chercher dans votre base de connaissances
+    $knowledge = KnowledgeBase::where('user_id', $this->bot->user_id)
+        ->where('contenu', 'like', "%{$message}%")
+        ->first();
+
+    if ($knowledge) {
+        return $knowledge->contenu;
+    }
+
+    return "Désolé, je n'ai pas trouvé de réponse à votre question.";
+}
+```
+
+### Avec gestion de licence/quota
+
+```php
+public function handle(TelegramClient $telegramClient)
+{
+    // Vérifier la licence
+    if (!$this->bot->hasActiveLicense()) {
+        $telegramClient->sendMessage(
+            $this->bot->token,
+            $this->chatId,
+            "❌ Votre licence a expiré."
+        );
+        return;
+    }
+
+    // Vérifier le quota
+    if ($this->bot->getRemainingMessages() <= 0) {
+        $telegramClient->sendMessage(
+            $this->bot->token,
+            $this->chatId,
+            "⚠️ Quota de messages épuisé."
+        );
+        return;
+    }
+
+    // Traiter le message...
+    $response = $this->generateResponse($this->message->content);
+
+    // Envoyer la réponse...
+    $telegramClient->sendMessage(/*...*/);
+
+    // Décrémenter le quota
+    $license = $this->bot->user->activeLicense();
+    $license->decrement('messages_remaining');
+}
+```
+
+---
 
 ## 🔧 Commandes Artisan
 
--   `php artisan telebridge:install` : Installe le package (configuration + migrations).
--   `php artisan telebridge:set-webhook {bot_token?} {--url=}` : Configure le webhook pour un bot. Si aucun argument n'est fourni, il utilise la configuration du fichier `.env`.
+### Configurer le webhook
 
-## ⚠️ Dépannage
+```bash
+php artisan telebridge:set-webhook
+```
 
--   **Le webhook ne se configure pas** : Assurez-vous que votre `APP_URL` dans `.env` est correcte et accessible publiquement en `https`.
--   **Les messages ne sont pas reçus** :
-    -   Vérifiez les logs de votre application Laravel (`storage/logs/laravel.log`).
-    -   Utilisez le tableau de bord de Ngrok (`http://127.0.0.1:4040`) pour inspecter les requêtes entrantes et voir si Telegram envoie bien les données.
+Options :
+```bash
+php artisan telebridge:set-webhook {bot_token} --url=https://example.com/webhook
+```
 
+### Installer TeleBridge
+
+```bash
+php artisan telebridge:install
+```
+
+Cette commande :
+- Publie la configuration
+- Exécute les migrations
+- Affiche les instructions de setup
+
+---
+
+## 🤝 Contribuer
+
+TeleBridge est open-source ! Les contributions sont les bienvenues.
+
+### Ligne directrice
+
+**TeleBridge doit rester un connecteur léger.**
+
+✅ **Contributions acceptées :**
+- Nouvelles méthodes API Telegram
+- Amélioration de la gestion des webhooks
+- Support de nouveaux types de messages Telegram
+- Optimisations de performance
+- Corrections de bugs
+- Amélioration de la documentation
+
+❌ **Contributions refusées :**
+- Logique métier (IA, génération de réponses, etc.)
+- Systèmes de licence/quota (à implémenter dans votre app)
+- Bases de connaissances
+- Systèmes d'analytics
+- Toute fonctionnalité qui n'est pas directement liée à la communication Telegram
+
+---
+
+## 📝 Licence
+
+MIT License
+
+---
+
+## 🙏 Remerciements
+
+- [Telegram Bot API](https://core.telegram.org/bots/api)
+- [Laravel Framework](https://laravel.com)
+
+---
+
+## 📞 Support
+
+- **Issues** : [GitHub Issues](https://github.com/mbindi/telebridge/issues)
+- **Email** : support@telebridge.dev
+- **Documentation** : [docs.telebridge.dev](https://docs.telebridge.dev)
+
+---
+
+**TeleBridge** - Le connecteur Telegram pour Laravel, simple et efficace. 🚀

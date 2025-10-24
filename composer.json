@@ -1,17 +1,38 @@
 {
     "name": "mbindi/telebridge",
-    "description": "A Laravel package to manage Telegram bots with intelligence and extensibility.",
-    "type": "laravel-package",
+    "description": "A lightweight Laravel connector for Telegram Bot API. Routes messages to your application without any business logic.",
+    "version": "2.0.0",
+    "type": "library",
+    "keywords": [
+        "laravel",
+        "telegram",
+        "bot",
+        "telegram-bot",
+        "connector",
+        "webhook",
+        "telegram-api",
+        "laravel-package",
+        "php"
+    ],
+    "homepage": "https://github.com/mbindi/telebridge",
     "license": "MIT",
     "authors": [
         {
             "name": "Mbindi",
-            "email": "your@email.com"
+            "email": "contact@mbindi.com",
+            "role": "Developer"
         }
     ],
     "require": {
-        "php": "^8.1",
-        "illuminate/support": "^10.0|^11.0"
+        "php": "^8.1|^8.2|^8.3",
+        "illuminate/support": "^10.0|^11.0",
+        "illuminate/database": "^10.0|^11.0",
+        "illuminate/http": "^10.0|^11.0",
+        "guzzlehttp/guzzle": "^7.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.0|^11.0",
+        "orchestra/testbench": "^8.0|^9.0"
     },
     "autoload": {
         "psr-4": {
@@ -20,6 +41,11 @@
         "files": [
             "src/Helpers/functions.php"
         ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Mbindi\\Telebridge\\Tests\\": "tests/"
+        }
     },
     "extra": {
         "laravel": {
@@ -31,5 +57,15 @@
             }
         }
     },
+    "scripts": {
+        "test": "vendor/bin/phpunit",
+        "test-coverage": "vendor/bin/phpunit --coverage-html coverage"
+    },
+    "config": {
+        "sort-packages": true,
+        "optimize-autoloader": true,
+        "preferred-install": "dist"
+    },
+    "minimum-stability": "stable",
     "prefer-stable": true
 }
