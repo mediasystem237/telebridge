@@ -8,6 +8,9 @@ TeleBridge est un package Laravel conçu pour créer, gérer et étendre des bot
 -   **Multi-Bot** : Conçu pour gérer plusieurs bots au sein de la même application.
 -   **Logique Intelligente** : Système de détection d'intention et de moteur de réponse intégré.
 -   **Extensible** : Des services modulaires et un gestionnaire d'intégrations pour connecter des IA, des CRM, etc.
+-   **Support Média Étendu** : Envoi de photos, documents, vidéos.
+-   **Claviers Interactifs** : Création et gestion de claviers inline et de réponse.
+-   **Gestion des Callback Queries** : Traitement des interactions utilisateur via les boutons inline.
 -   **Basé sur Laravel** : S'intègre parfaitement à l'écosystème Laravel (migrations, commandes, configuration).
 
 ---
@@ -85,25 +88,86 @@ Pour débuter, vous pouvez modifier directement les services pour ajouter votre 
     }
     ```
 
--   **Ajouter une réponse** : Ouvrez `src/Services/ResponseEngine.php` et ajoutez la réponse correspondante.
+-   **Ajouter une réponse** : Ouvrez `src/Services/ResponseEngine.php` et ajoutez la réponse correspondante. Vous pouvez maintenant inclure des claviers interactifs !
     ```php
     // Dans la méthode generate()
-    $responses = [
-        'ask_price' => 'Nos prix débutent à 100 USD.',
-        'ask_contact' => 'Vous pouvez nous contacter à support@example.com.',
-        'ask_help' => 'Voici comment je peux vous aider...', // Votre nouvelle réponse
-        'unknown' => 'Désolé, je n\'ai pas compris.',
-    ];
+    use Mbindi\Telebridge\Services\KeyboardBuilder;
+
+    // ...
+
+    case 'ask_price':
+        $response['text'] = 'Nos prix débutent à 100 USD. Voir nos plans ?';
+        $response['reply_markup'] = KeyboardBuilder::inline()
+            ->row([
+                KeyboardBuilder::inline()->button('Voir les Plans', ['callback_data' => 'view_plans']),
+                KeyboardBuilder::inline()->button('Contacter Ventes', ['callback_data' => 'contact_sales']),
+            ])
+            ->build();
+        break;
+    // ...
     ```
 
-### Envoyer un Message Manuellement
+### Gestion des Callback Queries
 
-Vous pouvez envoyer un message à n'importe quel utilisateur à tout moment en utilisant la façade `TeleBridge`.
+Lorsque l'utilisateur clique sur un bouton inline, une `callback_query` est envoyée à votre webhook. Le `MessageRouter` est maintenant configuré pour les intercepter et les passer à la méthode `handleCallbackQuery`.
+
+Vous pouvez personnaliser cette méthode dans `src/Services/MessageRouter.php` pour déclencher des actions spécifiques en fonction du `callback_data` reçu.
+
+```php
+// Dans src/Services/MessageRouter.php, méthode handleCallbackQuery
+protected function handleCallbackQuery(TelegramBot $bot, array $callbackQueryData): void
+{
+    $callbackQueryId = $callbackQueryData['id'];
+    $callbackData = $callbackQueryData['data'] ?? '';
+    $chatId = $callbackQueryData['message']['chat']['id'] ?? null;
+
+    // Répondre immédiatement à la callback query pour supprimer le statut de chargement sur le bouton
+    $this->telegramClient->answerCallbackQuery($bot->token, $callbackQueryId, ['text' => 'Requête traitée !']);
+
+    switch ($callbackData) {
+        case 'view_plans':
+            $responseText = "Voici nos différents plans : Basic, Pro, Enterprise.";
+            break;
+        case 'contact_sales':
+            $responseText = "Notre équipe commerciale vous contactera bientôt.";
+            break;
+        default:
+            $responseText = "Action inconnue.";
+            break;
+    }
+
+    if ($chatId && $responseText) {
+        $this->telegramClient->sendMessage($bot->token, $chatId, $responseText);
+    }
+
+    // ... (logique d'enregistrement en base de données)
+}
+```
+
+### Envoyer des Fichiers Média
+
+Vous pouvez maintenant envoyer des photos, documents et vidéos en utilisant la façade `TeleBridge`.
 
 ```php
 use Mbindi\Telebridge\Facades\TeleBridge;
 
-// ... dans un de vos contrôleurs ou services
+$botToken = config('telebridge.bot.token');
+$chatId = 123456789; // L'ID de l'utilisateur Telegram
+
+// Envoyer une photo par URL
+TeleBridge::sendPhoto($botToken, $chatId, 'https://example.com/image.jpg', ['caption' => 'Ma belle image']);
+
+// Envoyer un document par file_id (après l'avoir uploadé une première fois)
+TeleBridge::sendDocument($botToken, $chatId, 'BQACAgQAAx...file_id...', ['caption' => 'Mon document']);
+
+// Envoyer une vidéo
+TeleBridge::sendVideo($botToken, $chatId, 'https://example.com/video.mp4');
+```
+
+### Envoyer un Message Manuellement
+
+```php
+use Mbindi\Telebridge\Facades\TeleBridge;
 
 $botToken = config('telebridge.bot.token');
 $chatId = 123456789; // L'ID de l'utilisateur Telegram
@@ -122,3 +186,4 @@ TeleBridge::sendMessage($botToken, $chatId, 'Ceci est une notification de votre 
 -   **Les messages ne sont pas reçus** :
     -   Vérifiez les logs de votre application Laravel (`storage/logs/laravel.log`).
     -   Utilisez le tableau de bord de Ngrok (`http://127.0.0.1:4040`) pour inspecter les requêtes entrantes et voir si Telegram envoie bien les données.
+
