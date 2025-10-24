@@ -13,6 +13,31 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Multiple Bots Configuration
+    |--------------------------------------------------------------------------
+    | Vous pouvez configurer plusieurs bots ici.
+    | Utilisez TeleBridge::bot('name') pour accéder à un bot spécifique.
+    */
+    'bots' => [
+        'default' => [
+            'token' => env('TELEGRAM_BOT_TOKEN'),
+            'username' => env('TELEGRAM_BOT_USERNAME'),
+        ],
+        
+        // Exemple de bot supplémentaire
+        // 'support' => [
+        //     'token' => env('TELEGRAM_SUPPORT_BOT_TOKEN'),
+        //     'username' => env('TELEGRAM_SUPPORT_BOT_USERNAME'),
+        // ],
+        
+        // 'notifications' => [
+        //     'token' => env('TELEGRAM_NOTIF_BOT_TOKEN'),
+        //     'username' => env('TELEGRAM_NOTIF_BOT_USERNAME'),
+        // ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Webhook Settings
     |--------------------------------------------------------------------------
     */
@@ -23,23 +48,11 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Intent Detection Engine
+    | Notification Settings
     |--------------------------------------------------------------------------
     */
-    'intent' => [
-        'driver' => 'regex', // 'regex' or 'ai'
-        'confidence_threshold' => 0.75,
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | AI Driver Settings
-    |--------------------------------------------------------------------------
-    */
-    'ai' => [
-        'provider' => 'openai', // e.g., 'openai', 'deepseek'
-        'api_key' => env('AI_API_KEY'),
-        'model' => env('AI_MODEL', 'gpt-3.5-turbo'),
+    'notifications' => [
+        'default_parse_mode' => 'Markdown', // 'Markdown', 'HTML', or null
     ],
 
 ];

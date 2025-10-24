@@ -1,5 +1,61 @@
 # Changelog - TeleBridge
 
+## Version 2.1.0 - DX & Production-Ready (24 Octobre 2025)
+
+### ✨ Nouvelles Fonctionnalités
+
+#### 🔗 Webhook Avancé
+- `setWebhook()` supporte maintenant `allowed_updates` (filtrer les types de messages)
+- `setWebhook()` supporte `certificate` (SSL self-signed)
+- `setWebhook()` supporte `secret_token` (validation sécurisée)
+- `setWebhook()` supporte `max_connections` et `ip_address`
+- `deleteWebhook()` supporte `drop_pending_updates`
+
+#### 🐛 Gestion d'Erreurs Avancée
+- `getLastError()` - Récupère la dernière erreur API Telegram
+- `getLastResponse()` - Récupère la réponse HTTP brute
+- `hasError(string)` - Vérifie si une erreur spécifique s'est produite
+- `resetErrors()` - Réinitialise les erreurs
+- Sanitization des URLs dans les logs (tokens cachés)
+
+#### 🧪 Commande de Test
+- `php artisan telebridge:test` - Test rapide de connexion
+- `php artisan telebridge:test {chat_id} {message}` - Test d'envoi
+- Options `--token` et `--bot` pour spécifier le bot
+- Affichage détaillé des erreurs avec conseils
+
+#### 🎯 Interactions Avancées
+- `answerInlineQuery()` - Répondre aux inline queries
+- `answerPreCheckoutQuery()` - Gérer les paiements (e-commerce)
+- `answerShippingQuery()` - Gérer la livraison (e-commerce)
+
+#### 📦 Classes de Gestion de Fichiers
+- `TelegramFile` - Classe pour gérer les fichiers Telegram
+  - `fromTelegramResponse()` - Créer depuis réponse API
+  - `getDownloadUrl()` - URL de téléchargement
+  - `download()` - Télécharger vers Laravel Storage
+  - `getExtension()`, `getMimeType()`, `getFormattedSize()`
+- `TelegramPhoto` - Classe pour gérer les photos
+  - `fromPhotoArray()` - Sélectionner taille (largest/smallest/medium)
+  - `getDimensions()`, `getAspectRatio()`
+  - `isPortrait()`, `isLandscape()`, `isSquare()`
+
+#### ⚙️ Améliorations Diverses
+- `getFileDownloadUrl()` - Construit l'URL de téléchargement
+
+### 📊 Statistiques
+
+- **+3 nouvelles méthodes API** : 25 méthodes au total
+- **+7 méthodes de gestion d'erreurs**
+- **+2 classes de données** : TelegramFile, TelegramPhoto
+- **+1 commande Artisan**
+
+### 🔄 Pas de Breaking Changes
+
+Toutes les fonctionnalités v2.0 continuent de fonctionner. Les améliorations sont **additives**.
+
+---
+
 ## Version 2.0.0 - Package Connecteur Pur (24 Octobre 2025)
 
 ### 🎯 Changements Majeurs

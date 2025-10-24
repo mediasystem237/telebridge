@@ -1,7 +1,7 @@
 {
     "name": "mbindi/telebridge",
-    "description": "A lightweight Laravel connector for Telegram Bot API. Routes messages to your application without any business logic.",
-    "version": "2.0.0",
+    "description": "The most complete yet lightweight Telegram connector for Laravel. Long polling, notifications, multi-bots, DTOs, and more!",
+    "version": "2.2.0",
     "type": "library",
     "keywords": [
         "laravel",

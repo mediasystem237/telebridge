@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Log;
 class TelegramClient
 {
     protected $apiBaseUrl;
+    protected $lastError = null;
+    protected $lastResponse = null;
 
     public function __construct()
     {
@@ -23,22 +25,39 @@ class TelegramClient
     }
 
     /**
-     * Configure le webhook
+     * Configure le webhook avec options avancées
+     * 
+     * @param string $token Token du bot
+     * @param string $url URL du webhook
+     * @param array $options Options:
+     *   - certificate: Certificat SSL public (pour self-signed)
+     *   - ip_address: Adresse IP fixe du serveur
+     *   - max_connections: Nombre max de connexions simultanées (1-100, défaut: 40)
+     *   - allowed_updates: Types de mises à jour à recevoir (ex: ['message', 'callback_query'])
+     *   - drop_pending_updates: Supprimer les mises à jour en attente
+     *   - secret_token: Token secret pour validation (1-256 caractères)
      */
     public function setWebhook(string $token, string $url, array $options = []): ?array
     {
         $apiUrl = $this->buildUrl($token, 'setWebhook');
         $params = array_merge(['url' => $url], $options);
+        
+        // Convertir allowed_updates en JSON si c'est un array
+        if (isset($params['allowed_updates']) && is_array($params['allowed_updates'])) {
+            $params['allowed_updates'] = json_encode($params['allowed_updates']);
+        }
+        
         return $this->makeRequest($apiUrl, $params);
     }
 
     /**
      * Supprime le webhook
      */
-    public function deleteWebhook(string $token): ?array
+    public function deleteWebhook(string $token, bool $dropPendingUpdates = false): ?array
     {
         $apiUrl = $this->buildUrl($token, 'deleteWebhook');
-        return $this->makeRequest($apiUrl, []);
+        $params = ['drop_pending_updates' => $dropPendingUpdates];
+        return $this->makeRequest($apiUrl, $params);
     }
 
     /**
@@ -72,10 +91,7 @@ class TelegramClient
     public function sendPhoto(string $token, int $chatId, string $photo, array $options = []): ?array
     {
         $apiUrl = $this->buildUrl($token, 'sendPhoto');
-        $params = array_merge([
-            'chat_id' => $chatId,
-            'photo' => $photo,
-        ], $options);
+        $params = array_merge(['chat_id' => $chatId, 'photo' => $photo], $options);
         return $this->makeRequest($apiUrl, $params);
     }
 
@@ -85,10 +101,7 @@ class TelegramClient
     public function sendDocument(string $token, int $chatId, string $document, array $options = []): ?array
     {
         $apiUrl = $this->buildUrl($token, 'sendDocument');
-        $params = array_merge([
-            'chat_id' => $chatId,
-            'document' => $document,
-        ], $options);
+        $params = array_merge(['chat_id' => $chatId, 'document' => $document], $options);
         return $this->makeRequest($apiUrl, $params);
     }
 
@@ -98,10 +111,7 @@ class TelegramClient
     public function sendVideo(string $token, int $chatId, string $video, array $options = []): ?array
     {
         $apiUrl = $this->buildUrl($token, 'sendVideo');
-        $params = array_merge([
-            'chat_id' => $chatId,
-            'video' => $video,
-        ], $options);
+        $params = array_merge(['chat_id' => $chatId, 'video' => $video], $options);
         return $this->makeRequest($apiUrl, $params);
     }
 
@@ -111,10 +121,7 @@ class TelegramClient
     public function sendAudio(string $token, int $chatId, string $audio, array $options = []): ?array
     {
         $apiUrl = $this->buildUrl($token, 'sendAudio');
-        $params = array_merge([
-            'chat_id' => $chatId,
-            'audio' => $audio,
-        ], $options);
+        $params = array_merge(['chat_id' => $chatId, 'audio' => $audio], $options);
         return $this->makeRequest($apiUrl, $params);
     }
 
@@ -124,10 +131,7 @@ class TelegramClient
     public function sendVoice(string $token, int $chatId, string $voice, array $options = []): ?array
     {
         $apiUrl = $this->buildUrl($token, 'sendVoice');
-        $params = array_merge([
-            'chat_id' => $chatId,
-            'voice' => $voice,
-        ], $options);
+        $params = array_merge(['chat_id' => $chatId, 'voice' => $voice], $options);
         return $this->makeRequest($apiUrl, $params);
     }
 
@@ -137,10 +141,7 @@ class TelegramClient
     public function sendSticker(string $token, int $chatId, string $sticker, array $options = []): ?array
     {
         $apiUrl = $this->buildUrl($token, 'sendSticker');
-        $params = array_merge([
-            'chat_id' => $chatId,
-            'sticker' => $sticker,
-        ], $options);
+        $params = array_merge(['chat_id' => $chatId, 'sticker' => $sticker], $options);
         return $this->makeRequest($apiUrl, $params);
     }
 
@@ -173,13 +174,65 @@ class TelegramClient
     }
 
     /**
-     * Répond à une callback query (bouton inline cliqué)
+     * Répond à une callback query
      */
     public function answerCallbackQuery(string $token, string $callbackQueryId, array $options = []): ?array
     {
         $apiUrl = $this->buildUrl($token, 'answerCallbackQuery');
+        $params = array_merge(['callback_query_id' => $callbackQueryId], $options);
+        return $this->makeRequest($apiUrl, $params);
+    }
+
+    /**
+     * Répond à une inline query
+     * 
+     * @param string $token Token du bot
+     * @param string $inlineQueryId ID de l'inline query
+     * @param array $results Tableau de résultats (max 50)
+     * @param array $options Options additionnelles
+     */
+    public function answerInlineQuery(string $token, string $inlineQueryId, array $results, array $options = []): ?array
+    {
+        $apiUrl = $this->buildUrl($token, 'answerInlineQuery');
         $params = array_merge([
-            'callback_query_id' => $callbackQueryId,
+            'inline_query_id' => $inlineQueryId,
+            'results' => json_encode($results),
+        ], $options);
+        return $this->makeRequest($apiUrl, $params);
+    }
+
+    /**
+     * Répond à une pre-checkout query (e-commerce)
+     * 
+     * @param string $token Token du bot
+     * @param string $preCheckoutQueryId ID de la pre-checkout query
+     * @param bool $ok True si tout est OK, False sinon
+     * @param string|null $errorMessage Message d'erreur si ok=false
+     */
+    public function answerPreCheckoutQuery(string $token, string $preCheckoutQueryId, bool $ok, ?string $errorMessage = null): ?array
+    {
+        $apiUrl = $this->buildUrl($token, 'answerPreCheckoutQuery');
+        $params = [
+            'pre_checkout_query_id' => $preCheckoutQueryId,
+            'ok' => $ok,
+        ];
+        
+        if (!$ok && $errorMessage) {
+            $params['error_message'] = $errorMessage;
+        }
+        
+        return $this->makeRequest($apiUrl, $params);
+    }
+
+    /**
+     * Répond à une shipping query (e-commerce)
+     */
+    public function answerShippingQuery(string $token, string $shippingQueryId, bool $ok, array $options = []): ?array
+    {
+        $apiUrl = $this->buildUrl($token, 'answerShippingQuery');
+        $params = array_merge([
+            'shipping_query_id' => $shippingQueryId,
+            'ok' => $ok,
         ], $options);
         return $this->makeRequest($apiUrl, $params);
     }
@@ -249,6 +302,14 @@ class TelegramClient
     }
 
     /**
+     * Construit l'URL de téléchargement d'un fichier
+     */
+    public function getFileDownloadUrl(string $token, string $filePath): string
+    {
+        return "https://api.telegram.org/file/bot{$token}/{$filePath}";
+    }
+
+    /**
      * Récupère les informations du bot
      */
     public function getMe(string $token): ?array
@@ -291,12 +352,66 @@ class TelegramClient
     }
 
     /**
+     * Récupère la dernière erreur survenue
+     * 
+     * @return array|null ['error_code' => int, 'description' => string, 'parameters' => array] ou null
+     */
+    public function getLastError(): ?array
+    {
+        return $this->lastError;
+    }
+
+    /**
+     * Récupère la dernière réponse HTTP brute
+     * 
+     * @return array|null ['status' => int, 'body' => string, 'headers' => array] ou null
+     */
+    public function getLastResponse(): ?array
+    {
+        return $this->lastResponse;
+    }
+
+    /**
+     * Vérifie si une erreur spécifique s'est produite
+     */
+    public function hasError(string $errorDescription): bool
+    {
+        if (!$this->lastError) {
+            return false;
+        }
+        
+        return str_contains(
+            strtolower($this->lastError['description'] ?? ''),
+            strtolower($errorDescription)
+        );
+    }
+
+    /**
+     * Réinitialise les erreurs et réponses
+     */
+    public function resetErrors(): void
+    {
+        $this->lastError = null;
+        $this->lastResponse = null;
+    }
+
+    /**
      * Fait une requête HTTP à l'API Telegram
      */
     protected function makeRequest(string $url, array $params): ?array
     {
+        // Réinitialiser les erreurs précédentes
+        $this->resetErrors();
+        
         try {
             $response = Http::timeout(10)->post($url, $params);
+            
+            // Stocker la réponse brute
+            $this->lastResponse = [
+                'status' => $response->status(),
+                'body' => $response->body(),
+                'headers' => $response->headers(),
+            ];
             
             if ($response->successful()) {
                 $data = $response->json();
@@ -305,36 +420,71 @@ class TelegramClient
                     return $data;
                 }
                 
+                // Telegram a retourné ok=false
+                $this->lastError = [
+                    'error_code' => $data['error_code'] ?? 0,
+                    'description' => $data['description'] ?? 'Unknown error',
+                    'parameters' => $data['parameters'] ?? [],
+                ];
+                
                 Log::warning('Telegram API returned ok=false', [
-                    'response' => $data,
+                    'error' => $this->lastError,
+                    'url' => $this->sanitizeUrl($url),
                 ]);
                 
-                return $data;
+                return null;
             }
+            
+            // Erreur HTTP
+            $this->lastError = [
+                'error_code' => $response->status(),
+                'description' => "HTTP Error: " . $response->status(),
+                'parameters' => [],
+            ];
             
             Log::error('Telegram API HTTP Error', [
                 'status' => $response->status(),
                 'body' => $response->body(),
-                'url' => $url,
+                'url' => $this->sanitizeUrl($url),
             ]);
             
             return null;
             
         } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            $this->lastError = [
+                'error_code' => 0,
+                'description' => 'Connection error: ' . $e->getMessage(),
+                'parameters' => [],
+            ];
+            
             Log::error('Telegram API Connection Error', [
                 'error' => $e->getMessage(),
-                'url' => $url,
+                'url' => $this->sanitizeUrl($url),
             ]);
             return null;
             
         } catch (\Exception $e) {
+            $this->lastError = [
+                'error_code' => 0,
+                'description' => 'Exception: ' . $e->getMessage(),
+                'parameters' => [],
+            ];
+            
             Log::error('Telegram API Exception', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
-                'url' => $url,
+                'url' => $this->sanitizeUrl($url),
             ]);
             return null;
         }
+    }
+
+    /**
+     * Sanitize l'URL pour le logging (retire le token)
+     */
+    protected function sanitizeUrl(string $url): string
+    {
+        return preg_replace('/bot\d+:[^\/]+/', 'bot***TOKEN***', $url);
     }
 
     /**
