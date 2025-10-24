@@ -15,7 +15,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Mbindi\Telebridge\": "src/"
+            "Mbindi\\Telebridge\\": "src/"
         },
         "files": [
             "src/Helpers/functions.php"
@@ -24,10 +24,10 @@
     "extra": {
         "laravel": {
             "providers": [
-                "Mbindi\Telebridge\Providers\TeleBridgeServiceProvider"
+                "Mbindi\\Telebridge\\Providers\\TeleBridgeServiceProvider"
             ],
             "aliases": {
-                "TeleBridge": "Mbindi\Telebridge\Facades\TeleBridge"
+                "TeleBridge": "Mbindi\\Telebridge\\Facades\\TeleBridge"
             }
         }
     },
