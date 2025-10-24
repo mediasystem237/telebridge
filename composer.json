@@ -1,0 +1,36 @@
+{
+    "name": "mbindi/telebridge",
+    "description": "A Laravel package to manage Telegram bots with intelligence and extensibility.",
+    "type": "laravel-package",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Mbindi",
+            "email": "your@email.com"
+        }
+    ],
+    "require": {
+        "php": "^8.1",
+        "illuminate/support": "^10.0|^11.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Mbindi\Telebridge\": "src/"
+        },
+        "files": [
+            "src/Helpers/functions.php"
+        ]
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Mbindi\Telebridge\Providers\TeleBridgeServiceProvider"
+            ],
+            "aliases": {
+                "TeleBridge": "Mbindi\Telebridge\Facades\TeleBridge"
+            }
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
